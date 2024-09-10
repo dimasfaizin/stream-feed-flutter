@@ -26,6 +26,7 @@ class StreamHttpClient {
     httpClient
       ..options.receiveTimeout = this.options.receiveTimeout
       ..options.connectTimeout = this.options.connectTimeout
+      ..options.contentType = 'application/json'
       ..options.queryParameters = {
         'api_key': apiKey,
         'location': this.options.group,
