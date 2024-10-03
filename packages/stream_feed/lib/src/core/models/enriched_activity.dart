@@ -68,18 +68,27 @@ class GenericEnrichedActivity<A, Ob, T, Or> extends Equatable {
         Serializer.moveKeysToRoot(json, topLevelFields)!,
         fromJsonA ??
             (jsonA) => (A == User)
-                ? User.fromJson(jsonA! as Map<String, dynamic>) as A
+                ? (jsonA is Map<String, dynamic> ? User.fromJson(jsonA) as A : jsonA as A) // Handle the case when jsonA is not a Map
                 : jsonA as A,
         fromJsonOb ??
-            (jsonOb) => (Ob ==
-                    CollectionEntry) // TODO: can be a list of collection entry and a list of activities
-                ? CollectionEntry.fromJson(jsonOb! as Map<String, dynamic>)
-                    as Ob
-                : jsonOb as Ob,
-        fromJsonT ??
-            (jsonT) => (T == Activity)
-                ? Activity.fromJson(jsonT! as Map<String, dynamic>) as T
-                : jsonT as T,
+            (jsonOb) {
+              if (Ob == CollectionEntry) {
+                if (jsonOb is Map<String, dynamic>) {
+                  // Case when jsonOb is a single CollectionEntry
+                  return CollectionEntry.fromJson(jsonOb) as Ob;
+                } else if (jsonOb is List) {
+                  // Case when jsonOb is a List of CollectionEntry
+                  return jsonOb.map((e) => CollectionEntry.fromJson(e as Map<String, dynamic>)).toList() as Ob;
+                }
+              } else if (jsonOb is String) {
+                // If jsonOb is a string, just return it as Ob
+                return jsonOb as Ob;
+              }
+
+              // Default case: just cast it to Ob if none of the above matched
+              return jsonOb as Ob;
+            },
+        fromJsonT ?? (jsonT) => (T == Activity) ? Activity.fromJson(jsonT! as Map<String, dynamic>) as T : jsonT as T,
         fromJsonOr ??
             (jsonOr) {
               if (Or == User) {
@@ -264,8 +273,5 @@ class GenericEnrichedActivity<A, Ob, T, Or> extends Equatable {
     Object? Function(T value) toJsonT,
     Object? Function(Or value) toJsonOr,
   ) =>
-      Serializer.moveKeysToMapInPlace(
-          _$GenericEnrichedActivityToJson(
-              this, toJsonA, toJsonOb, toJsonT, toJsonOr),
-          topLevelFields);
+      Serializer.moveKeysToMapInPlace(_$GenericEnrichedActivityToJson(this, toJsonA, toJsonOb, toJsonT, toJsonOr), topLevelFields);
 }

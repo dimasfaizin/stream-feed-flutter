@@ -82,9 +82,6 @@ T? _$nullableGenericFromJson<T>(
   Object? input,
   T Function(Object? json) fromJson,
 ) {
-  if (input is String) {
-    return null;
-  }
   return input == null ? null : fromJson(input);
 }
 
